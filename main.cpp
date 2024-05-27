@@ -1,7 +1,5 @@
 #include "queue.h"
-
+#include "value.h"
 int main(){
-	Node<int> x{123};
-	queue<int> ex;
-
+	value x(123.0);
 }
