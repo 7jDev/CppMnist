@@ -1,9 +1,11 @@
 #include "value.h"
+value::value(): m_gradient(0),m_data(0),m_node{this, nullptr} {}
 value::value(double data): m_data(data), m_gradient(0),m_node{this, nullptr}{}
 value::value(value&& other): m_data(other.m_data),
        	m_gradient(other.m_gradient),
        	m_parents(std::move(other.m_parents))
 {
+	m_node.data = this; 
 	other.m_data = 0;
 	other.m_gradient = 0; 
 }
@@ -23,10 +25,28 @@ value value::operator*(value& other){
        answer.m_parents.push_back(other.m_ptr);
 	return answer;       
 }
+value& value::operator=(value&& other)
+{
+	m_data = other.m_data;
+	m_gradient = other.m_gradient;
+	m_parents = std::move(other.m_parents);
+	other.m_data = 0;
+	other.m_gradient = 0; 
+	return *this;
+}
 void value::random_init(){
 	std::random_device rd;
 	std::uniform_real_distribution<double> dist(-1,1);
 	m_data = dist(rd);
+}
+void value::requires_grad(){
+	grad = true;
+}
+value& value::operator+=(value& other){
+	m_data += other.m_data;
+       	other.m_gradient = 1; 	
+	m_parents.push_back(other.m_ptr);
+	return *this; 
 }
 value value::tanh(){
 value answer((exp(m_data)-exp(-(m_data)))/(exp(m_data)+ exp(-(m_data))));

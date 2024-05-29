@@ -4,23 +4,29 @@
 #include <algorithm>
 #include "queue.h"
 #include <random>
+#include <cassert>
 #ifndef VALUE_H
 #define VALUE_H
 class value {
 private:
 	double m_gradient;
        	double m_data;
+	bool grad = false;
 	std::vector<value*> m_parents;
 	Node<value*> m_node;
 	value* m_ptr = this;
 public:
 	friend std::ostream& operator<<(std::ostream& os, value& input);
 	value();
-	value(const value& other) = delete;
+	value(const value& other) = default;
 	value(value& other) =delete;
 	value(value&& other);
+	value& operator=(value&& other);
+	value& operator=(const value& other) = default;
+	value& operator+=(value& other);
 	value(double data);
 	void random_init();
+	void requires_grad();
 	value operator+(value& x); 
 	value operator*(value& x);
 	value tanh();
@@ -31,9 +37,20 @@ public:
 #ifndef VALUE_ARRAY_H
 #define VALUE_ARRAY_H
 class value_array{
-	private:
-	std::vector<value> m_values;
-	public:
-	value_array();
+        private:
+        std::vector<value> m_values;
+        size_t len;
+        public:
+        value_array();
+	friend std::ostream& operator<<(std::ostream& os, value_array& input); 
+        value_array(size_t length);
+	value_array(const value_array& other) = delete;
+       	value_array(value_array& other) = delete; 
+	value_array(value_array&& other); 	
+        void random_init();
+	value_array operator+(value_array& other);
+        value_array operator*(value_array& other);
+        value_array softmax();
+        value sum();
 };
 #endif
