@@ -11,25 +11,27 @@ class value {
 private:
 	double m_gradient;
        	double m_data;
-	bool grad = false;
+	bool m_grad = false;
 	std::vector<value*> m_parents;
 	Node<value*> m_node;
 	value* m_ptr = this;
 public:
 	friend std::ostream& operator<<(std::ostream& os, value& input);
 	value();
-	value(const value& other) = default;
-	value(value& other) =delete;
+	value(const value& other)= delete;
+	value(value& other) = delete;
 	value(value&& other);
 	value& operator=(value&& other);
 	value& operator=(const value& other) = default;
 	value& operator+=(value& other);
+	value return_copy();
 	value(double data);
 	void random_init();
 	void requires_grad();
 	value operator+(value& x); 
 	value operator*(value& x);
 	value tanh();
+	value elu();
 	void calculate_gradients();
 };
  
@@ -46,8 +48,13 @@ class value_array{
         value_array(size_t length);
 	value_array(const value_array& other) = delete;
        	value_array(value_array& other) = delete; 
-	value_array(value_array&& other); 	
-        void random_init();
+	value_array return_copy();
+	value_array(value_array&& other); 
+	value_array& operator=(value_array&& other);
+	value_array& operator=(const value_array& other) = delete;
+	value& operator[](const size_t i);
+	void requires_grad();
+	void random_init();
 	value_array operator+(value_array& other);
         value_array operator*(value_array& other);
         value_array softmax();

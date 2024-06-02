@@ -1,4 +1,5 @@
 #include "value.h"
+value_array::value_array(){}
 value_array::value_array(size_t length): len(length){
 	m_values.reserve(length);
 	for(size_t i=0; i< length; i++){
@@ -7,10 +8,7 @@ value_array::value_array(size_t length): len(length){
 	}
 	
 }
-value& operator[](size_t i){
-	return m_values[i];
-}
-value& operator[](size_t i) const{
+value& value_array::operator[](const size_t i){
 	return m_values[i];
 }
 value_array::value_array(value_array&& other): len(other.len), m_values(std::move(other.m_values)) {}
@@ -20,11 +18,20 @@ void value_array::random_init(){
 	});
 	return; 
 }
+value_array value_array::return_copy()
+{
+	value_array answer(len);
+	for(size_t i=0; i<len; i++)
+	{
+		 answer.m_values.push_back(std::move(m_values[i].return_copy()));
+	}
+	return answer;	
+}
 value_array value_array::operator+(value_array& other){
 	assert(other.len == len); 
 	value_array answer(len); 
 	for(size_t i=0; i<len; i++){
-		 answer.m_values[i] = std::move (m_values[i] + other.m_values[i]);
+		 answer[i] = std::move (m_values[i] + other[i]);
 	}
 	return answer;
 }
@@ -32,9 +39,17 @@ value_array value_array::operator*(value_array& other){
 	assert(other.len == len); 
 	value_array answer(len); 
 	for(size_t i=0; i<len; i++){
-		 answer.m_values[i] = std::move (m_values[i] * other.m_values[i]);
+		 answer[i] = std::move (m_values[i] * other[i]);
 	}
 	return answer;
+}
+value_array& value_array::operator=(value_array&& other)
+{
+	m_values = std::move(other.m_values);
+	other.m_values.clear();
+	len = other.len;
+	other.len =0;
+	return *this;
 }
 value value_array::sum(){
 	value answer;
@@ -43,7 +58,12 @@ value value_array::sum(){
 			});
        return answer; 	
 }
-value value_array::softmax()
+void value_array::requires_grad()
+{
+	for(auto& item: m_values){
+		item.requires_grad();
+	}
+}
 std::ostream& operator<<(std::ostream& os, value_array& input){
 	std::for_each(input.m_values.begin(), input.m_values.end(), [&](value& x){
 			os << x; 

@@ -1,11 +1,6 @@
 #include "queue.h"
 #include "value.h"
+#include "neural.h"
 int main(){
-	value_array x(3);
-	x.random_init();
-	value_array y(3);
-	y.random_init();
-	value_array g(x*y);
-	value finale(std::move(g.sum()));
-	finale.calculate_gradients();
+	mlp x{12,23,123,12,3}; 
 }

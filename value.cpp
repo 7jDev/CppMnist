@@ -3,7 +3,8 @@ value::value(): m_gradient(0),m_data(0),m_node{this, nullptr} {}
 value::value(double data): m_data(data), m_gradient(0),m_node{this, nullptr}{}
 value::value(value&& other): m_data(other.m_data),
        	m_gradient(other.m_gradient),
-       	m_parents(std::move(other.m_parents))
+       	m_parents(std::move(other.m_parents)),
+	m_grad(other.m_grad)
 {
 	m_node.data = this; 
 	other.m_data = 0;
@@ -34,13 +35,22 @@ value& value::operator=(value&& other)
 	other.m_gradient = 0; 
 	return *this;
 }
+value value::return_copy()
+{
+	value answer; 
+	answer.m_data = m_data; 
+	answer.m_gradient = m_gradient;
+	answer.m_parents.push_back(m_ptr);
+	m_gradient = 1; 
+	return answer;	
+} 
 void value::random_init(){
 	std::random_device rd;
 	std::uniform_real_distribution<double> dist(-1,1);
 	m_data = dist(rd);
 }
 void value::requires_grad(){
-	grad = true;
+	m_grad = true;
 }
 value& value::operator+=(value& other){
 	m_data += other.m_data;
@@ -54,6 +64,19 @@ m_gradient = 1 - pow(answer.m_data,2);
 answer.m_parents.push_back(this);
 return answer; 
 }
+value value::elu(){
+value answer;
+if (m_data<0){
+        answer.m_data =(exp(m_data) -1 ); 
+        m_gradient = exp(m_data); 
+}else{
+        answer.m_data = m_data; 
+        m_gradient = 1; 
+}
+answer.m_parents.push_back(this);
+return answer;
+}
+
 void value::calculate_gradients(){
 m_gradient =1;
 queue<value*> Queue;
