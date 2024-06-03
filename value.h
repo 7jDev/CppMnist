@@ -28,6 +28,8 @@ public:
 	value(double data);
 	void random_init();
 	void requires_grad();
+	void change_gradient(double x);
+	double return_data();
 	value operator+(value& x); 
 	value operator*(value& x);
 	value tanh();
@@ -51,13 +53,14 @@ class value_array{
 	value_array return_copy();
 	value_array(value_array&& other); 
 	value_array& operator=(value_array&& other);
+	value_array& operator=(std::vector<value>& temp);
 	value_array& operator=(const value_array& other) = delete;
 	value& operator[](const size_t i);
 	void requires_grad();
 	void random_init();
+	value_array softmax();
 	value_array operator+(value_array& other);
         value_array operator*(value_array& other);
-        value_array softmax();
         value sum();
 };
 #endif

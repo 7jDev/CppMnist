@@ -2,5 +2,8 @@
 #include "value.h"
 #include "neural.h"
 int main(){
-	mlp x{12,23,123,12,3}; 
+	value_array temp(1000);
+	temp.random_init();
+	layer x(2,1000, TANH);
+       x.l_output(temp);	
 }

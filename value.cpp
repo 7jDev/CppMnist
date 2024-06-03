@@ -43,7 +43,15 @@ value value::return_copy()
 	answer.m_parents.push_back(m_ptr);
 	m_gradient = 1; 
 	return answer;	
-} 
+}
+void value::change_gradient(double x)
+{
+	m_gradient = x; 
+}
+double value::return_data()
+{	
+	return m_data;
+}
 void value::random_init(){
 	std::random_device rd;
 	std::uniform_real_distribution<double> dist(-1,1);
