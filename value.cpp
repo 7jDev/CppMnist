@@ -48,10 +48,6 @@ void value::push_back(value * item)
 {
 	m_parents.push_back(item);
 }
-bool value::operator==(value& other)
-{
-	return other.m_data == m_data ? true:false;
-}
 void value::change_gradient(double x)
 {
 	m_gradient = x; 

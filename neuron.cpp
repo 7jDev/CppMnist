@@ -56,43 +56,45 @@ std::vector<std::vector<std::reference_wrapper<neuron>>> layer::split_neurons()
 	std::vector<std::vector<std::reference_wrapper<neuron>>> answer;
 	size_t x = m_neurons.size()/number; 
 	for(size_t z = 0; z<number; z++){
-		std::vector<std::reference_wrapper> temp; 
+		std::vector<std::reference_wrapper<neuron>> temp; 
 		for(size_t t = 0; t<x; t++)
 			temp.push_back(std::ref(m_neurons[t]));
 		answer.push_back(std::move(temp));
 	}
 	return answer; 
 }
-std::vector<value> layer::apply(value_array& input,std::vector<neuron>& neuro)
+std::vector<value> layer::apply(value_array& input,std::vector<std::reference_wrapper<neuron>>& neuro)
 {
-	std::vector<value> answer; 
-	for_each(neuro.begin(), neuro.end(), [&](neuron& x) {
-			x.n_output(input)
-			temp.push_back(std::move(x.return_output().return_copy()));
+	std::vector<value> answer;
+	std::for_each(neuro.begin(), neuro.end(), [&](std::reference_wrapper<neuron>& x) {
+			x.get().n_output(input);
+			answer.push_back(x.get().return_output().return_copy());
 			});
 	return answer; 
 }
 void layer::normal_output(value_array& input)
 {
-	std::vector<size_t> split = std::move(split_neurons());
 	std::vector<value> temp; 
-	for(std::vector<std::reference_wrapper<neuron>: split)
-	{
-		layer::pool.jobQueue(std::bind(apply, _x,split), input);
-	}
-
+	std::for_each(m_neurons.begin(), m_neurons.end(),[&](neuron& x){
+			x.n_output(input);
+			temp.push_back(std::move(x.return_output().return_copy()));
+			});
 	output = temp; 
 	return;
 }
 void layer::l_output(value_array& input)
 {
-	std::vector<size_t> split = std::move(split_neurons());
-	std::vector<value> temp; 
-	for(std::vector<std::reference_wrapper<neuron>: split)
+	std::vector<std::vector<std::reference_wrapper<neuron>>> split = (split_neurons());
+	std::vector<value> temp;
+	for(std::vector<std::reference_wrapper<neuron>>& block :split)
 	{
-		layer::pool.jobQueue(std::bind(apply, _x,split), input);
+		auto func = std::bind(&layer::apply, this,std::placeholders::_1,std::move(block));
+		std::function<std::vector<value>(value_array&)> real_fn= [&func](value_array& input){return func(input);};
+		layer::pool.jobQueue(real_fn,input);
 	}
-
+	std::vector<std::vector<value>> out = std::move(layer::pool.return_output());
+	for(std::vector<value>& subarr: out)
+		temp.insert(temp.begin(), std::make_move_iterator(subarr.begin()), std::make_move_iterator(subarr.end()));
 	output = temp; 
 	return;
 }
@@ -220,7 +222,7 @@ value_array& mlp::get_data(std::string& path)
 value_array& mlp::predict_helper(layer& current ,value_array& input)
 {
 	if(current.return_activation() == NONE){
-		current.l_output(input);
+		current.normal_output(input);
 		current.softmax(); 
 		loss = std::move(current.cross_entropy(current_class));	
 		return current.return_l_output();

@@ -11,9 +11,10 @@
 #include <functional>
 #ifndef THREAD_H
 #define THREAD_H
-template <typename T, typename output>
+template <typename T, typename T2>
 class threadPool
 {
+
 	public:
 		size_t start(){
 		const size_t number_of_threads = std::thread::hardware_concurrency();
@@ -22,16 +23,22 @@ class threadPool
 		}
 		return number_of_threads;
 		}
-		std::vector<output> stop()
+		std::vector<T2>& return_output()
+		{
+		for(std::thread& active_threads: threads )
+			active_threads.join();
+		std::unique_lock<std::mutex> lock(answer_mutex);	
+		return answers;
+		}
+		void stop()
 		{
 		{
 		std::unique_lock<std::mutex> lock(queue_mutex);
-		terminate = true; 
+		terminate = true;
 		}
 		mutex_condition.notify_all();
 		for(std::thread& active_threads: threads )
 			active_threads.join();
-		return answers;
 		}
 		bool busy()
 		{
@@ -42,12 +49,12 @@ class threadPool
 		}
 		return termination; 
 		} 
-		void jobQueue(const std::function<output(T)>& job, T& input){
+		void jobQueue(std::function<T2(T&)>& job, T& inputs){
 			{
 			std::unique_lock<std::mutex> lock(queue_mutex);
 			std::unique_lock<std::mutex> lock_input(input_mutex);
-			input.push_back(input); 
-			jobs.push_back(job);
+			input.push(std::ref(inputs)); 
+			jobs.push(job);
 			}
 			mutex_condition.notify_one(); 
 			return; 
@@ -57,30 +64,29 @@ class threadPool
 		{
 		while(true)
 		{
-			std::function<output(T)> job; 
+			std::function<T2(T&)> job; 
 			{
 			std::unique_lock<std::mutex> lock(queue_mutex);
-			mutex_condition(lock, [this] {return !jobs.empty() || terminate;});
+			mutex_condition.wait(lock, [this] {return !jobs.empty() || terminate;});
 			if(terminate)
 				return;
 			job = jobs.front();
-			job.pop();
+			jobs.pop();
 			}
-			{
 			std::unique_lock<std::mutex> lock(input_mutex);
 			std::unique_lock<std::mutex> answer_lock(answer_mutex);
-			answer.push_back(job(input.front().get()));
-			}
+			std::vector<value> add = job(input.front().get());
+			answers.push_back(std::move(add));
 		}
 		}
 		std::vector<std::thread> threads;  	
 		std::condition_variable mutex_condition; 
-		std::queue<std::function<output(T)>> jobs;
+		std::queue<std::function<T2(T&)>> jobs;
 		std::mutex queue_mutex;
 		std::mutex answer_mutex;
 		std::mutex input_mutex; 
 		std::queue<std::reference_wrapper<T>> input; 
-		std::vector<output> answers; 
+		std::vector<T2> answers; 
 		bool terminate;
 };
 #endif
@@ -121,8 +127,9 @@ class layer{
 	        value_array soft_output;
 		static threadPool<value_array, std::vector<value>> pool;
 		layer* next;
-		std::vector<size_t> split_neurons();
-		value_array apply(value_array input);
+		std::vector<value_array> inputs; 
+		std::vector<std::vector<std::reference_wrapper<neuron>>> split_neurons();
+		std::vector<value> apply(value_array& input, std::vector<std::reference_wrapper<neuron>>& neuro);
 	public:
 		layer();
 		void set_next(layer * next); 
