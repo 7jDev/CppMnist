@@ -23,7 +23,9 @@ public:
 	value(value&& other);
 	value& operator=(value&& other);
 	value& operator=(const value& other) = default;
+	bool operator==(value& other);
 	value& operator+=(value& other);
+	void push_back(value* item);
 	value return_copy();
 	value(double data);
 	void random_init();
@@ -35,6 +37,7 @@ public:
 	value tanh();
 	value elu();
 	void calculate_gradients();
+	void learn(double lr);
 };
  
 #endif
@@ -44,14 +47,17 @@ class value_array{
         private:
         std::vector<value> m_values;
         size_t len;
-        public:
+	double clip(double input, double lower, double higher); 
+	public:
         value_array();
 	friend std::ostream& operator<<(std::ostream& os, value_array& input); 
         value_array(size_t length);
+	value_array(std::vector<double>& items);
 	value_array(const value_array& other) = delete;
        	value_array(value_array& other) = delete; 
 	value_array return_copy();
-	value_array(value_array&& other); 
+	value_array(value_array&& other);
+       	value cross_entropy(int i);	
 	value_array& operator=(value_array&& other);
 	value_array& operator=(std::vector<value>& temp);
 	value_array& operator=(const value_array& other) = delete;

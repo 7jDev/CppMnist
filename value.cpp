@@ -44,6 +44,14 @@ value value::return_copy()
 	m_gradient = 1; 
 	return answer;	
 }
+void value::push_back(value * item)
+{
+	m_parents.push_back(item);
+}
+bool value::operator==(value& other)
+{
+	return other.m_data == m_data ? true:false;
+}
 void value::change_gradient(double x)
 {
 	m_gradient = x; 
@@ -54,7 +62,7 @@ double value::return_data()
 }
 void value::random_init(){
 	std::random_device rd;
-	std::uniform_real_distribution<double> dist(-1,1);
+	std::normal_distribution<double> dist;
 	m_data = dist(rd);
 }
 void value::requires_grad(){
@@ -74,9 +82,10 @@ return answer;
 }
 value value::elu(){
 value answer;
+double alpha= {0.1};
 if (m_data<0){
-        answer.m_data =(exp(m_data) -1 ); 
-        m_gradient = exp(m_data); 
+        answer.m_data =(alpha *exp(m_data) -1 ); 
+        m_gradient = alpha * exp(m_data); 
 }else{
         answer.m_data = m_data; 
         m_gradient = 1; 
@@ -94,6 +103,21 @@ while(Queue.peek() != nullptr){
 	std::for_each(Queue.peek()->data->m_parents.begin(), Queue.peek()->data->m_parents.end(), [&](value* temp){
 			Queue.enqueue(temp->m_node);
 			temp->m_gradient *= current.data->m_gradient;
+			});
+	Queue.dequeue();
+}
+return;
+}
+void value::learn(double lr){
+queue<value*> Queue;
+Queue.enqueue(m_node);
+while(Queue.peek() != nullptr){
+	struct Node<value*> current = *Queue.peek();
+	std::for_each(Queue.peek()->data->m_parents.begin(), Queue.peek()->data->m_parents.end(), [&](value* temp){
+			Queue.enqueue(temp->m_node);
+			if(temp->m_grad == true){
+			temp->m_data = temp->m_data - (current.data->m_gradient * lr);
+			}
 			});
 	Queue.dequeue();
 }

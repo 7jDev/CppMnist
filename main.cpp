@@ -2,8 +2,6 @@
 #include "value.h"
 #include "neural.h"
 int main(){
-	value_array temp(1000);
-	temp.random_init();
-	layer x(2,1000, TANH);
-       x.l_output(temp);	
+mlp x(784, {64,32}, {ELU,ELU});
+x.one_epoch();
 }
