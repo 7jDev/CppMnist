@@ -6,6 +6,7 @@
 #include <initializer_list>
 #include <thread>
 #include <mutex>
+#include <tuple> 
 #include <condition_variable>
 #include <queue>
 #include <functional>
@@ -25,8 +26,15 @@ class threadPool
 		}
 		std::vector<T2>& return_output()
 		{
-		for(std::thread& active_threads: threads )
-			active_threads.join();
+		{
+		std::unique_lock<std::mutex> lock(queue_mutex);
+		terminate = true;
+		}
+		mutex_condition.notify_all();
+		for(std::thread& active_threads: threads ){
+			if(active_threads.joinable())
+				active_threads.join();
+		}
 		std::unique_lock<std::mutex> lock(answer_mutex);	
 		return answers;
 		}
@@ -54,7 +62,7 @@ class threadPool
 			std::unique_lock<std::mutex> lock(queue_mutex);
 			std::unique_lock<std::mutex> lock_input(input_mutex);
 			input.push(std::ref(inputs)); 
-			jobs.push(job);
+			jobs.push(std::move(job));
 			}
 			mutex_condition.notify_one(); 
 			return; 
@@ -73,10 +81,13 @@ class threadPool
 			job = jobs.front();
 			jobs.pop();
 			}
+			{
 			std::unique_lock<std::mutex> lock(input_mutex);
 			std::unique_lock<std::mutex> answer_lock(answer_mutex);
 			std::vector<value> add = job(input.front().get());
+			input.pop();
 			answers.push_back(std::move(add));
+			}
 		}
 		}
 		std::vector<std::thread> threads;  	
@@ -108,6 +119,7 @@ class neuron
 		value out; 
 		activations neuron_activation;	
 	public:
+	friend std::ostream& operator<<(std::ostream& os, neuron& input);
 	neuron();
 	neuron(size_t input,activations act); 
 	activations return_activation(); 
@@ -125,11 +137,12 @@ class layer{
 		activations m_func; 
 		value_array output;
 	        value_array soft_output;
-		static threadPool<value_array, std::vector<value>> pool;
+		std::vector<value_array> input_normal; 
+		static threadPool<std::vector<value_array>, std::vector<value>> pool;
 		layer* next;
-		std::vector<value_array> inputs; 
-		std::vector<std::vector<std::reference_wrapper<neuron>>> split_neurons();
-		std::vector<value> apply(value_array& input, std::vector<std::reference_wrapper<neuron>>& neuro);
+		void set_input(value_array& input); 
+		std::vector<std::tuple<std::vector<value_array>,std::vector<std::reference_wrapper<neuron>>>> split_neurons(value_array& inputs);
+		std::vector<value> apply(std::vector<value_array>& input,std::vector<std::reference_wrapper<neuron>>& neuro); //std::tuple<std::vector<value_array>, std::vector<std::reference>>
 	public:
 		layer();
 		void set_next(layer * next); 

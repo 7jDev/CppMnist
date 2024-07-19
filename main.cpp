@@ -1,7 +1,8 @@
-#include "queue.h"
 #include "value.h"
-#include "neural.h"
+#include "neural_net.h"
 int main(){
-mlp x(784, {64,32}, {ELU,ELU});
-x.one_epoch();
+	value_array h(3);
+	h.random_init();
+	layer x(3, 2, TANH);
+	x.normal_forward_layer(h);
 }

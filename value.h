@@ -2,8 +2,8 @@
 #include <ostream>
 #include <cmath>
 #include <algorithm>
-#include "queue.h"
 #include <random>
+#include <queue>
 #include <cassert>
 #ifndef VALUE_H
 #define VALUE_H
@@ -12,8 +12,7 @@ private:
 	double m_gradient;
        	double m_data;
 	bool m_grad = false;
-	std::vector<value*> m_parents;
-	Node<value*> m_node;
+	std::vector<std::reference_wrapper<value>>m_parents;
 	value* m_ptr = this;
 public:
 	friend std::ostream& operator<<(std::ostream& os, value& input);
@@ -25,7 +24,7 @@ public:
 	value& operator=(const value& other) = default;
 	bool operator==(value& other);
 	value& operator+=(value& other);
-	void push_back(value* item);
+	void push_back(value& item);
 	value return_copy();
 	value(double data);
 	void random_init();
@@ -50,6 +49,7 @@ class value_array{
 	double clip(double input, double lower, double higher); 
 	public:
         value_array();
+	size_t size();
 	friend std::ostream& operator<<(std::ostream& os, value_array& input); 
         value_array(size_t length);
 	value_array(std::vector<double>& items);
@@ -68,5 +68,6 @@ class value_array{
 	value_array operator+(value_array& other);
         value_array operator*(value_array& other);
         value sum();
+	std::vector<value>& return_vector();
 };
 #endif

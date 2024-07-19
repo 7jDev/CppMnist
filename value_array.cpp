@@ -7,6 +7,10 @@ value_array::value_array(size_t length): len(length){
 	m_values.push_back(std::move(temp));
 	}
 }
+inline std::vector<value>& value_array::return_vector()
+{
+	return m_values;
+}
 /*void value_array::fill_with(size_t i)
 {
 	std::for_each(m_values.begin(), m_values.end(),[&](value& x){
@@ -40,12 +44,15 @@ value_array& value_array::operator=(std::vector<value>& temp)
 	len = m_values.size();
 	return *this;
 }
+size_t value_array::size(){
+return m_values.size(); 
+}
 value_array value_array::return_copy()
 {
 	value_array answer(m_values.size());
 	for(size_t i=0; i<m_values.size(); i++)
 	{
-		 answer.m_values.push_back(std::move(m_values[i].return_copy()));
+		 answer.m_values[i] = std::move(m_values[i].return_copy());
 	}
 	
 	return answer;	
@@ -90,7 +97,7 @@ value_array value_array::softmax()
 		sum += exp(val.return_data()); 
 	for(size_t i =0; i< m_values.size(); i++){
 		answer.m_values[i] = exp(m_values[i].return_data())/sum; 
-		answer.m_values[i].push_back(&m_values[i]);
+		answer.m_values[i].push_back(m_values[i]);
 	}
        	std::for_each(m_values.begin(), m_values.end(), [&](value& z){
 			z.change_gradient(1);
@@ -99,11 +106,10 @@ value_array value_array::softmax()
 }
 value value_array::cross_entropy(int i)
 {
-	std::cout << "input value is: " << m_values[i].return_data() << std::endl;
 	double val = m_values[i].return_data() + 1e-8; 
 	value answer(-log( clip(val, 0.0, 1.0)));
 	std::for_each(m_values.begin(), m_values.end(), [&](value& x){
-			answer.push_back(&x);
+			answer.push_back(x);
 			if(m_values[i]==x)
 				x.change_gradient(x.return_data() -1); 
 			else
