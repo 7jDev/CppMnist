@@ -19,20 +19,16 @@ class ThreadPool{
 		return started; 
 		}
 		template<typename T, typename... Args>
-		auto enqueue(T&& function, Args&&... arg) 
-			-> std::future<typename std::result_of<T(Args...)>::type> 
+		auto enqueue(T&& function, Args&&... arg) -> std::future<decltype(function(arg...))>
 		{
-		using return_type = typename std::result_of<T(Args...)>::type;
-		auto task  = std::make_shared<std::packaged_task<return_type()>>(
-				std::bind(std::forward<T>(function),std::forward<Args>(arg)...)
-				);
-		std::future<return_type> result = task->get_future();
-		{
-			std::lock_guard<std::mutex> lock(queue_mutex);
-			jobs.emplace([task](void){*task();});
-		}
-		cv.notify_one(); 
-		return result; 
+			typedef decltype(function(arg...)) return_type;
+			auto task = std::make_shared<std::packaged_task<return_type(void)>>(std::bind(std::forward<T>(function), std::forward<Args>(arg)...));
+			{
+			std::unique_lock<std::mutex> lock(queue_mutex);
+			jobs.emplace([task](void){(*task)();});
+			}
+			cv.notify_one(); 
+			return task->get_future();
 		}
 		~ThreadPool()
 		{
@@ -52,6 +48,8 @@ class ThreadPool{
 		{
 		std::unique_lock<std::mutex> lock(queue_mutex);
 		cv.wait(lock,[this](void){return !jobs.empty() || terminate;});
+		if(terminate)
+			return;
 		job  = std::move(jobs.front()); 
 		jobs.pop(); 
 		}
@@ -96,15 +94,17 @@ class neuron{
 class layer{
 	public:
 		layer();
-		layer(size_t input_size, size_t amount_of_neurons, activation func);
+		layer(size_t input_size, size_t amount_of_neurons, activation func, bool threadable);
 		void normal_forward_layer(value_array& in); 
 		void forward_layer(value_array& in);
 		value_array& layer_output();
 	private:
 		size_t split_up();
-		std::vector<value> fast_func();  
+			std::vector<value> fast_func();  
 		std::vector<neuron> m_neurons;
+		std::vector<std::vector<neuron>> m_neurons_fast; 
 		value_array final;
+		size_t m_amount_of_neurons ;
 		activation function;
 		static ThreadPool threads;   
 };

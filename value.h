@@ -7,7 +7,7 @@
 #include <cassert>
 #ifndef VALUE_H
 #define VALUE_H
-class value {
+class alignas(64) value {
 private:
 	double m_gradient;
        	double m_data;

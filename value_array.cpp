@@ -17,6 +17,7 @@ inline std::vector<value>& value_array::return_vector()
 			x = std::move(value(i));
 			});
 }*/
+
 double value_array::clip(double input, double lower, double higher){
 	return std::max(lower, std::min( input,higher));
 } 

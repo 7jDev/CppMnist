@@ -1,5 +1,6 @@
 #include "neural_net.h"
-ThreadPool layer::threads;
+#include <iostream>
+ThreadPool layer::threads{};
 neuron::neuron(){}
 neuron::neuron(size_t input_size, activation func): weights(input_size),function(func)
 {
@@ -8,7 +9,7 @@ neuron::neuron(size_t input_size, activation func): weights(input_size),function
 	bias.requires_grad();
 	weights.requires_grad();
 }
-void neuron::set_input(value_array & in)
+void neuron::set_input(value_array& in)
 {
 	input = std::move(in.return_copy()); 
 }
@@ -36,38 +37,72 @@ return final;
 }
 layer::layer(){}
 
-layer::layer(size_t input_size, size_t amount_of_neurons, activation func):
+layer::layer(size_t input_size, size_t amount_of_neurons, activation func, bool threadable):
 	function(func),
-	final(amount_of_neurons)
-{
+	final(amount_of_neurons),
+	m_amount_of_neurons(amount_of_neurons)
+{	
+	if(threadable){
+	size_t split = split_up();
+	for(size_t i = 0; i< amount_of_neurons;i = i+split){ 
+		std::vector<neuron> temp; 
+		for(size_t j=0; j< split; ++j)
+			temp.emplace_back(neuron(input_size, func));
+		m_neurons_fast.push_back(std::move(temp));
+
+	}
+	assert(m_neurons_fast.size() == std::thread::hardware_concurrency()); 
+	}
+	else{
 	m_neurons.reserve(amount_of_neurons); 
 	for(size_t i=0; i< amount_of_neurons; i++)
 		m_neurons.emplace_back(neuron(input_size,func)); 
+	}
+	
 }
 size_t layer::split_up()
 {
 	static size_t number_of_threads; 
-	if(threads.is_started())
+	if(!threads.is_started())
 		 number_of_threads = threads.start(); 
-	assert(m_neurons.size() % number_of_threads == 0);
-	size_t split = m_neurons.size() / number_of_threads; 
+	assert(m_amount_of_neurons% number_of_threads == 0);
+	size_t split = m_amount_of_neurons/ number_of_threads; 
 	return split; 
 }
 
 void layer::forward_layer(value_array& in)
 {
-	/*std::for_each(m_neurons.begin(), m_neurons.end(), [&](neuron & n){
-			n.set_input(in);	
-			});
+
+	for(std::vector<neuron>& vec: m_neurons_fast )
+		for(neuron& n: vec)
+			n.set_input(in);
+	
+	
 	auto function = [](std::vector<neuron>& neural){
+		std::vector<value> temp;
 		std::for_each(neural.begin(), neural.end(),[&](neuron& n){
 		n.forward(); 
-		}); 
-				},
-	size_t split = split_up(); 
-	for(size_t i = 0 ; i< m_neurons.size(); i = i+split){
-		threads.enqueue( );
-	}*/
+			temp.push_back(std::move(n.neuron_output())); 
+		});
+		return temp; };
+	std::vector<std::future<std::vector<value>>> return_val; 
+
+	for(std::vector<neuron> & vec: m_neurons_fast)
+		return_val.push_back(std::move(threads.enqueue((function), std::ref(vec))));
+	std::vector<std::vector<value>> result;  
+	for(std::future<std::vector<value>> & vec: return_val){
+		result.push_back(std::move(vec.get()));
+
+	}
+
+	std::vector<value> answer; 
+	answer.reserve(m_amount_of_neurons); 
+	std::for_each(result.begin(), result.end(), [&](std::vector<value>& x){
+			for(value& g: x)
+				answer.push_back(std::move(g));
+			});
+	final = answer; 
+	return;
 }
 void layer::normal_forward_layer(value_array& in)
 {
@@ -75,7 +110,7 @@ void layer::normal_forward_layer(value_array& in)
 	std::for_each(m_neurons.begin(), m_neurons.end(), [&](neuron& n)  {
 			n.set_input(in);
 			n.forward();
-			temp.push_back(); 
+			temp.push_back(std::move(n.neuron_output())); 
 			}); 
 	final = temp;
 	return;
