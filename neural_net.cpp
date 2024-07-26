@@ -1,4 +1,5 @@
 #include "neural_net.h"
+#include <time.h>
 #include <iostream>
 ThreadPool layer::threads{};
 neuron::neuron(){}
@@ -73,11 +74,6 @@ size_t layer::split_up()
 void layer::forward_layer(value_array& in)
 {
 
-	for(std::vector<neuron>& vec: m_neurons_fast )
-		for(neuron& n: vec)
-			n.set_input(in);
-	
-	
 	auto function = [](std::vector<neuron>& neural){
 		std::vector<value> temp;
 		std::for_each(neural.begin(), neural.end(),[&](neuron& n){
@@ -86,9 +82,11 @@ void layer::forward_layer(value_array& in)
 		});
 		return temp; };
 	std::vector<std::future<std::vector<value>>> return_val; 
-
-	for(std::vector<neuron> & vec: m_neurons_fast)
+	for(std::vector<neuron>& vec: m_neurons_fast ){
+		for(neuron& n: vec)
+			n.set_input(in);
 		return_val.push_back(std::move(threads.enqueue((function), std::ref(vec))));
+	}
 	std::vector<std::vector<value>> result;  
 	for(std::future<std::vector<value>> & vec: return_val){
 		result.push_back(std::move(vec.get()));
@@ -118,4 +116,9 @@ void layer::normal_forward_layer(value_array& in)
 value_array& layer::layer_output()
 {
 	return final;
+}
+MLP::MLP(std::initializer_list<int> neurons, std::initializer_list<activation> functions)
+
+{
+	
 }

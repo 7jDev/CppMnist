@@ -116,6 +116,7 @@ void layer::l_output(value_array& input)
 	{
 		std::function<std::vector<value>(std::vector<value_array>&)> func = std::bind(&layer::apply, this,std::placeholders::_1,(std::get<std::vector<std::reference_wrapper<neuron>>>(block)));
 		std::function<std::vector<value>(std::vector<value_array>&)> real_fn= [func](std::vector<value_array>& i){return func(i);};
+
 		layer::pool.jobQueue(real_fn,std::get<std::vector<value_array>>(block));
 	}
 	std::vector<std::vector<value>> out = std::move(layer::pool.return_output());

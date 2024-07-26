@@ -1,6 +1,6 @@
 ---
 triple:          'x86_64-apple-darwin'
-binary-path:     main
+binary-path:     main_not
 relocations:
   - { offsetInCU: 0x98F8, offset: 0x98F8, size: 0x8, addend: 0x0, symName: __ZNSt3__112__to_addressB8ue170006INS_6vectorI6neuronNS_9allocatorIS2_EEEEEEPT_S7_, symObjAddr: 0x4B0, symBinAddr: 0x1000013A0, symSize: 0x10 }
   - { offsetInCU: 0x992D, offset: 0x992D, size: 0x8, addend: 0x0, symName: __ZNSt3__110destroy_atB8ue170006INS_6vectorI6neuronNS_9allocatorIS2_EEEELi0EEEvPT_, symObjAddr: 0x4C0, symBinAddr: 0x1000013B0, symSize: 0x20 }

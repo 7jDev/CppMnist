@@ -100,7 +100,6 @@ class layer{
 		value_array& layer_output();
 	private:
 		size_t split_up();
-			std::vector<value> fast_func();  
 		std::vector<neuron> m_neurons;
 		std::vector<std::vector<neuron>> m_neurons_fast; 
 		value_array final;
@@ -109,3 +108,14 @@ class layer{
 		static ThreadPool threads;   
 };
 #endif 
+#ifndef NEURAL_NET_H
+#define NERUAL_NET_H
+class MLP
+{
+	public:
+		MLP(std::initializer_list<int> neurons, 
+				std::initializer_list<activation> functions); 	
+	private: 
+		std::vector<layer> layers; 
+};
+#endif
