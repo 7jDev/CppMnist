@@ -1,4 +1,5 @@
 #include "value.h"
+#include "neural_net.h"
 value_array::value_array(){}
 value_array::value_array(size_t length): len(length){
 	m_values.reserve(length);

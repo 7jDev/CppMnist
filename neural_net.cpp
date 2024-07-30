@@ -1,6 +1,6 @@
 #include "neural_net.h"
-#include <time.h>
 #include <iostream>
+#include<chrono>
 ThreadPool layer::threads{};
 neuron::neuron(){}
 neuron::neuron(size_t input_size, activation func): weights(input_size),function(func)
@@ -73,7 +73,7 @@ size_t layer::split_up()
 
 void layer::forward_layer(value_array& in)
 {
-
+	auto first = std::chrono::high_resolution_clock::now(); 
 	auto function = [](std::vector<neuron>& neural){
 		std::vector<value> temp;
 		std::for_each(neural.begin(), neural.end(),[&](neuron& n){
@@ -81,18 +81,20 @@ void layer::forward_layer(value_array& in)
 			temp.push_back(std::move(n.neuron_output())); 
 		});
 		return temp; };
+	auto second = std::chrono::high_resolution_clock::now(); 
+	auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(second - first);
+	std::cout << diff.count() << std::flush; 
 	std::vector<std::future<std::vector<value>>> return_val; 
+	std::vector<std::vector<value>> result;  
+
 	for(std::vector<neuron>& vec: m_neurons_fast ){
 		for(neuron& n: vec)
 			n.set_input(in);
 		return_val.push_back(std::move(threads.enqueue((function), std::ref(vec))));
 	}
-	std::vector<std::vector<value>> result;  
-	for(std::future<std::vector<value>> & vec: return_val){
-		result.push_back(std::move(vec.get()));
 
-	}
-
+	for(std::future<std::vector<value>>& x: return_val)
+		result.push_back(std::move(x.get()));
 	std::vector<value> answer; 
 	answer.reserve(m_amount_of_neurons); 
 	std::for_each(result.begin(), result.end(), [&](std::vector<value>& x){
